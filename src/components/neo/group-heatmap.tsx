@@ -67,10 +67,10 @@ export function GroupHeatmap({ stats, onSelect, selected }: HeatmapProps) {
               {/* Marca d'água vetorial monocromática */}
               <AnimalWatermark 
                 group={s.group} 
-                className="absolute -right-2 -bottom-2 h-16 w-16 opacity-[0.08] text-white transition-opacity duration-300 group-hover:opacity-[0.12]" 
+                className="absolute right-1 bottom-1 h-14 w-14 opacity-20 text-white transition-opacity duration-300 group-hover:opacity-40 pointer-events-none" 
               />
 
-              <div className="relative flex h-full flex-col justify-between">
+              <div className="relative z-10 flex h-full flex-col justify-between pointer-events-none">
                 <div className="flex items-start justify-between">
                   <span className="ticker text-xs font-bold tracking-tight">
                     {String(s.group).padStart(2, "0")}
