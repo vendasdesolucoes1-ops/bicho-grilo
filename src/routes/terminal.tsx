@@ -243,7 +243,7 @@ function NeoQuantLab() {
                   <StatCard
                     label="Total de sorteios"
                     value={draws.length.toLocaleString()}
-                    hint={`base de ${allDraws.length.toLocaleString()}`}
+                    hint={`base analisada: ${draws.length.toLocaleString()}`}
                   />
                   <StatCard
                     label="Último resultado"
