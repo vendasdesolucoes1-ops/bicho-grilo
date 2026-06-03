@@ -1,6 +1,8 @@
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 
 const SYSTEM_PROMPT = `Você é o NEO Analyst, um analista estatístico sênior dentro do NEO Quant Lab — uma plataforma de auditoria de aleatoriedade para sorteios históricos do Jogo do Bicho e loterias similares.
 
@@ -24,11 +26,36 @@ export const Route = createFileRoute("/api/chat")({
         if (!Array.isArray(messages)) {
           return new Response("Messages required", { status: 400 });
         }
-        const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
-        const gateway = createLovableAiGatewayProvider(key);
-        const model = gateway("google/gemini-3-flash-preview");
+        const lovableKey = process.env.LOVABLE_API_KEY;
+        const geminiKey = process.env.GEMINI_API_KEY;
+        const openaiKey = process.env.OPENAI_API_KEY;
+
+        let model;
+
+        if (geminiKey) {
+          const google = createGoogleGenerativeAI({ apiKey: geminiKey });
+          model = google("gemini-2.5-flash");
+        } else if (openaiKey) {
+          const openai = createOpenAI({ apiKey: openaiKey });
+          model = openai("gpt-4o-mini");
+        } else if (lovableKey) {
+          const gateway = createLovableAiGatewayProvider(lovableKey);
+          model = gateway("google/gemini-3-flash-preview");
+        }
+
+        if (!model) {
+          console.warn("[API Chat] Nenhuma chave de IA encontrada. Retornando fallback.");
+          // Fallback controlado para que a interface não quebre com 500
+          // AI SDK useChat expects a stream. A simple plain text response with "0:..." simulates a data stream.
+          return new Response(
+            '0:"NEO Analyst indisponível. Configure uma chave de IA (GEMINI_API_KEY ou OPENAI_API_KEY) nas variáveis de ambiente para habilitar os insights automáticos."\n',
+            {
+              status: 200,
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            }
+          );
+        }
 
         const system = body.context
           ? `${SYSTEM_PROMPT}\n\nCONTEXTO ESTATÍSTICO ATUAL:\n${body.context}`
@@ -42,8 +69,14 @@ export const Route = createFileRoute("/api/chat")({
           });
           return result.toUIMessageStreamResponse({ originalMessages: messages });
         } catch (e) {
-          console.error(e);
-          return new Response("AI error", { status: 500 });
+          console.error("[API Chat Error]", e);
+          return new Response(
+            '0:"Ocorreu um erro ao comunicar com o provedor de IA. Verifique os logs e os limites de cota da chave configurada."\n',
+            {
+              status: 200,
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            }
+          );
         }
       },
     },
