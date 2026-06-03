@@ -49,8 +49,8 @@ export function computeGroupStats(draws: Draw[]): GroupStat[] {
     const f = counts.get(g) ?? 0;
     const last = lastSeen.get(g) ?? -1;
     const delay = last < 0 ? n : n - 1 - last;
-    const z = (f - expected) / std;
-    const score = Math.max(0, Math.min(100, Math.round(50 + z * 20)));
+    const z = std > 0 ? (f - expected) / std : 0;
+    const score = isNaN(z) ? 50 : Math.max(0, Math.min(100, Math.round(50 + z * 20)));
     return {
       group: g,
       animal: ANIMALS[g],
@@ -63,10 +63,11 @@ export function computeGroupStats(draws: Draw[]): GroupStat[] {
   });
 }
 
-// Chi-square test for uniformity over 25 groups
 export function chiSquare(stats: GroupStat[]): { value: number; df: number; pApprox: number } {
   const total = stats.reduce((s, x) => s + x.frequency, 0);
   const expected = total / 25;
+  if (expected === 0) return { value: 0, df: 24, pApprox: 1 };
+  
   const chi = stats.reduce((s, x) => s + Math.pow(x.frequency - expected, 2) / expected, 0);
   // Rough approximation of p-value via Wilson–Hilferty
   const df = 24;
@@ -74,7 +75,7 @@ export function chiSquare(stats: GroupStat[]): { value: number; df: number; pApp
   const denom = Math.sqrt(2 / (9 * df));
   const zScore = z / denom;
   const p = 1 - normCdf(zScore);
-  return { value: chi, df, pApprox: p };
+  return { value: chi, df, pApprox: isNaN(p) ? 1 : p };
 }
 
 export function entropy(stats: GroupStat[]): number {
@@ -88,18 +89,23 @@ export function entropy(stats: GroupStat[]): number {
 }
 
 export function runsTest(draws: Draw[]): { runs: number; expected: number; z: number } {
+  if (draws.length === 0) return { runs: 0, expected: 0, z: 0 };
+  
   // Convert to above/below median group (12.5)
   const seq = draws.map((d) => (d.group > 12 ? 1 : 0));
   let runs = 1;
   for (let i = 1; i < seq.length; i++) if (seq[i] !== seq[i - 1]) runs++;
   const n1 = seq.filter((x) => x === 1).length;
   const n2 = seq.length - n1;
+  
+  if (n1 + n2 === 0) return { runs: 0, expected: 0, z: 0 };
+  
   const expected = (2 * n1 * n2) / (n1 + n2) + 1;
   const variance =
     (2 * n1 * n2 * (2 * n1 * n2 - n1 - n2)) /
     (Math.pow(n1 + n2, 2) * (n1 + n2 - 1));
   const z = (runs - expected) / Math.sqrt(variance || 1);
-  return { runs, expected, z };
+  return { runs, expected, z: isNaN(z) ? 0 : z };
 }
 
 export function dispersionIndex(stats: GroupStat[]): number {
