@@ -24,21 +24,21 @@ export interface ImportLog {
 
 export class DrawsRepository {
   /**
-   * Retrieves draws from the 'neo.draws' table with optional limits.
+   * Retrieves draws from the 'public.neo_draws' table with optional limits.
    */
   static async getDraws(limit = 2000): Promise<DrawRecord[]> {
     const { data, error } = await supabase
-      .schema("neo")
-      .from("draws")
+      .from("neo_draws")
       .select("*")
       .order("draw_date", { ascending: false })
       .limit(limit);
 
     if (error) {
       console.error("Failed to fetch draws:", error);
-      throw new Error(error.message);
+      // Return empty array instead of throwing — so the UI shows "no data" gracefully
+      return [];
     }
-    return data as DrawRecord[];
+    return (data ?? []) as DrawRecord[];
   }
 
   /**
@@ -46,8 +46,7 @@ export class DrawsRepository {
    */
   static async bulkInsertDraws(draws: Omit<DrawRecord, "id" | "created_at">[]): Promise<boolean> {
     const { error } = await supabase
-      .schema("neo")
-      .from("draws")
+      .from("neo_draws")
       .insert(draws);
 
     if (error) {
@@ -62,8 +61,7 @@ export class DrawsRepository {
    */
   static async logImport(source: string, recordsImported: number, status: string): Promise<void> {
     const { error } = await supabase
-      .schema("neo")
-      .from("import_logs")
+      .from("neo_import_logs")
       .insert([{ source, records_imported: recordsImported, status }]);
 
     if (error) {

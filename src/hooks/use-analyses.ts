@@ -1,13 +1,25 @@
 /**
  * useAnalyses — TanStack Query hooks for saved analyses
- * All operations are tenant-scoped via RLS (no manual filtering needed).
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
-import type { Analysis, AnalysisFilters, AnalysisResults } from "@/types/database";
 
 const QUERY_KEY = "neo-analyses";
+
+export interface Analysis {
+  id: string;
+  user_id: string;
+  title: string;
+  filters: Record<string, unknown>;
+  results: Record<string, unknown>;
+  draws_count: number | null;
+  audit_score: number | null;
+  is_pinned: boolean;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 // ─── List analyses ─────────────────────────────────────────────────────────
 
@@ -19,8 +31,7 @@ export function useAnalyses() {
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
-        .schema("neo")
-        .from("analyses")
+        .from("neo_analyses")
         .select("*")
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
@@ -36,41 +47,28 @@ export function useAnalyses() {
 
 interface SaveAnalysisInput {
   title: string;
-  filters: AnalysisFilters;
-  results: AnalysisResults;
+  filters: Record<string, unknown>;
+  results: Record<string, unknown>;
   draws_count?: number;
   audit_score?: number;
   tags?: string[];
 }
 
 export function useSaveAnalysis() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: SaveAnalysisInput) => {
-      if (!user || !profile) throw new Error("Usuário não autenticado");
-
-      // Check quota before inserting
-      const { data: hasQuota } = await supabase
-        .schema("neo")
-        .rpc("check_analysis_quota");
-
-      if (hasQuota === false) {
-        throw new Error(
-          "Limite de análises do plano atingido. Faça upgrade para salvar mais.",
-        );
-      }
+      if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
-        .schema("neo")
-        .from("analyses")
+        .from("neo_analyses")
         .insert({
-          tenant_id: profile.tenant_id,
           user_id: user.id,
           title: input.title,
-          filters: input.filters as unknown as Record<string, unknown>,
-          results: input.results as unknown as Record<string, unknown>,
+          filters: input.filters,
+          results: input.results,
           draws_count: input.draws_count ?? null,
           audit_score: input.audit_score ?? null,
           tags: input.tags ?? [],
@@ -95,8 +93,7 @@ export function usePinAnalysis() {
   return useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
       const { error } = await supabase
-        .schema("neo")
-        .from("analyses")
+        .from("neo_analyses")
         .update({ is_pinned })
         .eq("id", id);
 
@@ -108,7 +105,7 @@ export function usePinAnalysis() {
   });
 }
 
-// ─── Delete analysis ────────────────────────────────────────────────────────
+// ─── Delete analysis ───────────────────────────────────────────────────────
 
 export function useDeleteAnalysis() {
   const qc = useQueryClient();
@@ -116,8 +113,7 @@ export function useDeleteAnalysis() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .schema("neo")
-        .from("analyses")
+        .from("neo_analyses")
         .delete()
         .eq("id", id);
 

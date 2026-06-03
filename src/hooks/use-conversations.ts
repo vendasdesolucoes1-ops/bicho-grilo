@@ -1,11 +1,27 @@
 /**
  * useConversations — TanStack Query hooks for IA conversation history
- * All scoped to the current tenant via RLS automatically.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
-import type { Conversation, ConversationMessage } from "@/types/database";
+
+export interface Conversation {
+  id: string;
+  user_id: string;
+  title: string | null;
+  context_snapshot: string | null;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
 
 const CONV_KEY = "neo-conversations";
 const MSG_KEY = "neo-messages";
@@ -20,8 +36,7 @@ export function useConversations() {
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
-        .schema("neo")
-        .from("conversations")
+        .from("neo_conversations")
         .select("*")
         .order("updated_at", { ascending: false })
         .limit(50);
@@ -42,8 +57,7 @@ export function useConversationMessages(conversationId: string | null) {
     queryFn: async () => {
       if (!conversationId) return [];
       const { data, error } = await supabase
-        .schema("neo")
-        .from("conversation_messages")
+        .from("neo_conversation_messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
@@ -51,35 +65,25 @@ export function useConversationMessages(conversationId: string | null) {
       if (error) throw new Error(error.message);
       return (data ?? []) as ConversationMessage[];
     },
-    staleTime: 60_000,
+    staleTime: 10_000,
   });
 }
 
 // ─── Create conversation ───────────────────────────────────────────────────
 
-interface CreateConversationInput {
-  title?: string;
-  analysis_id?: string;
-  context_snapshot?: string;
-}
-
 export function useCreateConversation() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: CreateConversationInput) => {
-      if (!user || !profile) throw new Error("Usuário não autenticado");
-
+    mutationFn: async (input: { title?: string; context?: string }) => {
+      if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
-        .schema("neo")
-        .from("conversations")
+        .from("neo_conversations")
         .insert({
-          tenant_id: profile.tenant_id,
           user_id: user.id,
           title: input.title ?? null,
-          analysis_id: input.analysis_id ?? null,
-          context_snapshot: input.context_snapshot ?? null,
+          context_snapshot: input.context ?? null,
         })
         .select()
         .single();
@@ -95,34 +99,27 @@ export function useCreateConversation() {
 
 // ─── Append message ────────────────────────────────────────────────────────
 
-interface AppendMessageInput {
-  conversation_id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
 export function useAppendMessage() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: AppendMessageInput) => {
-      const { data, error } = await supabase
-        .schema("neo")
-        .from("conversation_messages")
+    mutationFn: async (input: {
+      conversationId: string;
+      role: "user" | "assistant";
+      content: string;
+    }) => {
+      const { error } = await supabase
+        .from("neo_conversation_messages")
         .insert({
-          conversation_id: input.conversation_id,
+          conversation_id: input.conversationId,
           role: input.role,
           content: input.content,
-        })
-        .select()
-        .single();
+        });
 
       if (error) throw new Error(error.message);
-      return data as ConversationMessage;
     },
-    onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: [MSG_KEY, variables.conversation_id] });
-      qc.invalidateQueries({ queryKey: [CONV_KEY] });
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [MSG_KEY, vars.conversationId] });
     },
   });
 }
@@ -135,8 +132,7 @@ export function useDeleteConversation() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .schema("neo")
-        .from("conversations")
+        .from("neo_conversations")
         .delete()
         .eq("id", id);
 

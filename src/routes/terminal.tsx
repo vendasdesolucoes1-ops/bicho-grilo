@@ -32,7 +32,7 @@ import { InsightsModule } from "@/components/neo/insights-module";
 import { requireAuth } from "@/lib/auth-guard";
 import { useAuth } from "@/contexts/auth-context";
 import { useSaveAnalysis } from "@/hooks/use-analyses";
-import { PLAN_COLORS, PLAN_LABELS } from "@/types/database";
+
 import { UserMenu } from "@/components/neo/user-menu";
 import { SavedAnalysesSidebar } from "@/components/neo/saved-analyses-sidebar";
 

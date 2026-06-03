@@ -6,6 +6,7 @@ import { UserMenu } from "@/components/neo/user-menu";
 import { PLAN_LABELS, PLAN_COLORS } from "@/types/database";
 import { cn } from "@/lib/utils";
 import { usePlanLimits } from "@/hooks/use-plan-limits";
+import { useAnalyses } from "@/hooks/use-analyses";
 
 export const Route = createFileRoute("/billing")({
   beforeLoad: requireAuth,
@@ -48,7 +49,8 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
 
 function BillingDashboard() {
   const { profile } = useAuth();
-  const { data: limits, isLoading } = usePlanLimits();
+  const limits = usePlanLimits();
+  const { data: analyses } = useAnalyses();
 
   if (!profile) return null;
 
@@ -82,27 +84,13 @@ function BillingDashboard() {
                 <Zap className="h-5 w-5 text-neon" /> Consumo do Ciclo Atual
               </h2>
               
-              {isLoading ? (
-                <div className="space-y-6 animate-pulse">
-                  <div className="h-10 bg-surface rounded" />
-                  <div className="h-10 bg-surface rounded" />
-                </div>
-              ) : limits ? (
-                <div className="space-y-8">
-                  <UsageBar
-                    label="Análises Salvas"
-                    used={limits.analyses_used}
-                    limit={limits.max_saved_analyses}
-                  />
-                  <UsageBar
-                    label="Mensagens / Interações com IA"
-                    used={limits.ai_queries_used}
-                    limit={limits.max_ai_queries}
-                  />
-                </div>
-              ) : (
-                <p className="text-sm text-danger">Erro ao carregar limites do plano.</p>
-              )}
+              <div className="space-y-8">
+                <UsageBar
+                  label="Análises Salvas"
+                  used={analyses?.length ?? 0}
+                  limit={limits.max_analyses < 0 ? 999999 : limits.max_analyses}
+                />
+              </div>
             </div>
 
             {/* Features */}

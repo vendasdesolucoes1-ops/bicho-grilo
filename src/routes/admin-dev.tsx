@@ -41,27 +41,24 @@ function AdminDevDashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Tenants (RLS desativado na public.tenants no CRM)
+        // neo_tenants
         const { count: tCount } = await supabase
-          .from("tenants")
+          .from("neo_tenants")
           .select("*", { count: "exact", head: true });
 
-        // Profiles (Depende de RLS, pode retornar apenas os do tenant logado)
+        // neo_profiles
         const { count: pCount } = await supabase
-          .schema("neo")
-          .from("profiles")
+          .from("neo_profiles")
           .select("*", { count: "exact", head: true });
 
-        // Analyses
+        // neo_analyses
         const { count: aCount } = await supabase
-          .schema("neo")
-          .from("analyses")
+          .from("neo_analyses")
           .select("*", { count: "exact", head: true });
 
-        // Conversations
+        // neo_conversations
         const { count: cCount } = await supabase
-          .schema("neo")
-          .from("conversations")
+          .from("neo_conversations")
           .select("*", { count: "exact", head: true });
 
         setStats({

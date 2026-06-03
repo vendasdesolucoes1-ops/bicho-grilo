@@ -1,24 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
-import { PlanLimits } from "@/types/database";
+
+// Default plan limits by tier
+const PLAN_LIMITS = {
+  free:    { tier: "free",    max_analyses: 5,   max_conversations: 5,   can_export_csv: false, can_use_ai: false },
+  starter: { tier: "starter", max_analyses: 50,  max_conversations: 50,  can_export_csv: true,  can_use_ai: true },
+  pro:     { tier: "pro",     max_analyses: 500, max_conversations: 200, can_export_csv: true,  can_use_ai: true },
+  elite:   { tier: "elite",   max_analyses: -1,  max_conversations: -1,  can_export_csv: true,  can_use_ai: true },
+} as const;
 
 export function usePlanLimits() {
   const { profile } = useAuth();
-
-  return useQuery({
-    queryKey: ["neo-plan-limits", profile?.tenant_id],
-    enabled: !!profile?.tenant_id,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_my_plan_limits");
-      
-      if (error) {
-        console.error("Error fetching plan limits:", error);
-        throw new Error(error.message);
-      }
-      
-      return data[0] as PlanLimits;
-    },
-    staleTime: 60_000,
-  });
+  const plan = (profile?.plan ?? "free") as keyof typeof PLAN_LIMITS;
+  return PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 }
