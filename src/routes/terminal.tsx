@@ -17,9 +17,9 @@ import {
   ANIMALS,
   computeGroupStats,
   dispersionIndex,
-  generateDraws,
   randomnessScore,
 } from "@/lib/lottery-data";
+import { useDraws } from "@/hooks/use-draws";
 import { GroupHeatmap } from "@/components/neo/group-heatmap";
 import { StatCard } from "@/components/neo/stat-card";
 import { NeoChat } from "@/components/neo/neo-chat";
@@ -74,19 +74,29 @@ function NeoQuantLab() {
   const [extraction, setExtraction] = useState("Todas");
   const [selected, setSelected] = useState<number | null>(null);
 
-  const allDraws = useMemo(() => generateDraws(2000, 42), []);
+  const periodMap: Record<string, number> = { "7d": 50, "30d": 200, "90d": 600, all: 2000 };
+  const limit = periodMap[period] ?? 600;
+  
+  const { data: drawsData, isLoading } = useDraws(limit);
   const draws = useMemo(() => {
-    const periodMap: Record<string, number> = { "7d": 50, "30d": 200, "90d": 600, all: 2000 };
-    return allDraws.slice(-(periodMap[period] ?? 600));
-  }, [allDraws, period]);
+    if (!drawsData) return [];
+    return drawsData.map((d) => ({
+      id: d.id,
+      date: d.draw_date,
+      group: d.group,
+      state: d.state,
+      lottery: d.lottery,
+      extraction: d.extraction,
+    }));
+  }, [drawsData]);
 
   const stats = useMemo(() => computeGroupStats(draws), [draws]);
   const audit = useMemo(() => randomnessScore(draws, stats), [draws, stats]);
 
   const sortedByFreq = [...stats].sort((a, b) => b.frequency - a.frequency);
   const sortedByDelay = [...stats].sort((a, b) => b.delay - a.delay);
-  const mostFrequent = sortedByFreq[0];
-  const mostDelayed = sortedByDelay[0];
+  const mostFrequent = sortedByFreq[0] ?? { group: 17, frequency: 0, animal: "" };
+  const mostDelayed = sortedByDelay[0] ?? { group: 23, delay: 0, animal: "" };
   const last = draws[draws.length - 1];
   const dispersion = dispersionIndex(stats);
 
@@ -96,7 +106,7 @@ function NeoQuantLab() {
     return [
       `Loteria=${lottery}, Estado=${state}, Período=${period}, Extração=${extraction}`,
       `Sorteios analisados: ${draws.length}`,
-      `Último sorteio: grupo ${last?.group} (${ANIMALS[last?.group ?? 1]})`,
+      `Último sorteio: grupo ${last?.group ?? '?'} (${ANIMALS[last?.group ?? 1]})`,
       `Top frequência: ${top}`,
       `Mais atrasados: ${delayed}`,
       `Score de aleatoriedade: ${audit.score}/100 (${audit.classification})`,

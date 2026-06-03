@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminDevRouteImport } from './routes/admin-dev'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiImportDrawsRouteImport } from './routes/api/import-draws'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
 const TerminalRoute = TerminalRouteImport.update({
@@ -47,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiImportDrawsRoute = ApiImportDrawsRouteImport.update({
+  id: '/api/import-draws',
+  path: '/api/import-draws',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/billing': typeof BillingRoute
   '/terminal': typeof TerminalRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/import-draws': typeof ApiImportDrawsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/billing': typeof BillingRoute
   '/terminal': typeof TerminalRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/import-draws': typeof ApiImportDrawsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/billing': typeof BillingRoute
   '/terminal': typeof TerminalRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/import-draws': typeof ApiImportDrawsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/terminal'
     | '/api/chat'
+    | '/api/import-draws'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/terminal'
     | '/api/chat'
+    | '/api/import-draws'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/terminal'
     | '/api/chat'
+    | '/api/import-draws'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   BillingRoute: typeof BillingRoute
   TerminalRoute: typeof TerminalRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiImportDrawsRoute: typeof ApiImportDrawsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/import-draws': {
+      id: '/api/import-draws'
+      path: '/api/import-draws'
+      fullPath: '/api/import-draws'
+      preLoaderRoute: typeof ApiImportDrawsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   BillingRoute: BillingRoute,
   TerminalRoute: TerminalRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiImportDrawsRoute: ApiImportDrawsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

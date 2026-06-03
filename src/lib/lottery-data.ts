@@ -12,46 +12,13 @@ export const ANIMALS: Record<number, string> = {
 };
 
 export type Draw = {
-  id: number;
+  id: string | number;
   date: string; // ISO
   group: number;
   state: string;
   lottery: string;
   extraction: string;
 };
-
-const STATES = ["RJ", "SP", "MG", "BA", "RS", "PR"];
-const LOTTERIES = ["PT", "PTM", "PTV", "PTN", "Federal"];
-const EXTRACTIONS = ["1º Prêmio", "2º Prêmio", "3º Prêmio", "4º Prêmio", "5º Prêmio"];
-
-// Mulberry32 PRNG
-function mulberry32(seed: number) {
-  return function () {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function generateDraws(count = 2000, seed = 42): Draw[] {
-  const rand = mulberry32(seed);
-  const now = Date.now();
-  const draws: Draw[] = [];
-  for (let i = 0; i < count; i++) {
-    const group = Math.floor(rand() * 25) + 1;
-    const date = new Date(now - (count - i) * 1000 * 60 * 60 * 6).toISOString();
-    draws.push({
-      id: i + 1,
-      date,
-      group,
-      state: STATES[Math.floor(rand() * STATES.length)],
-      lottery: LOTTERIES[Math.floor(rand() * LOTTERIES.length)],
-      extraction: EXTRACTIONS[Math.floor(rand() * EXTRACTIONS.length)],
-    });
-  }
-  return draws;
-}
 
 export type GroupStat = {
   group: number;

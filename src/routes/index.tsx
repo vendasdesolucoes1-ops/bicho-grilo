@@ -17,7 +17,9 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { computeGroupStats, generateDraws, randomnessScore } from "@/lib/lottery-data";
+import { computeGroupStats, randomnessScore } from "@/lib/lottery-data";
+import { useDraws } from "@/hooks/use-draws";
+import { NeoChat } from "@/components/neo/neo-chat";
 import { GroupHeatmap } from "@/components/neo/group-heatmap";
 import { useAuth } from "@/contexts/auth-context";
 import { UserMenu } from "@/components/neo/user-menu";
@@ -121,7 +123,18 @@ function Nav() {
 
 /* -------------------- HERO -------------------- */
 function Hero() {
-  const draws = useMemo(() => generateDraws(600, 42), []);
+  const { data: drawsData } = useDraws(600);
+  const draws = useMemo(() => {
+    if (!drawsData) return [];
+    return drawsData.map((d) => ({
+      id: d.id,
+      date: d.draw_date,
+      group: d.group,
+      state: d.state,
+      lottery: d.lottery,
+      extraction: d.extraction,
+    }));
+  }, [drawsData]);
   const stats = useMemo(() => computeGroupStats(draws), [draws]);
   const audit = useMemo(() => randomnessScore(draws, stats), [draws, stats]);
 
