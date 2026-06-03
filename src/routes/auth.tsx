@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -454,28 +454,26 @@ function SignupForm({
 
 // ─── Reusable FormField ────────────────────────────────────────────────────
 
-const FormField = ({
-  label,
-  id,
-  error,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  label: string;
-  id: string;
-  error?: string;
-}) => (
+const FormField = forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }
+>(({ label, id, error, className, ...props }, ref) => (
   <div className="space-y-1.5">
     <label htmlFor={id} className="block text-sm font-medium">
       {label}
     </label>
     <input
       id={id}
+      ref={ref}
       className={cn(
         "w-full rounded-md border bg-surface/60 px-3 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-electric/40 transition-all",
         error ? "border-danger focus:ring-danger/40" : "border-border focus:border-electric",
+        className
       )}
       {...props}
     />
     {error && <p className="text-xs text-danger">{error}</p>}
   </div>
-);
+));
+
+FormField.displayName = "FormField";

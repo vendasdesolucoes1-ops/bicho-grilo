@@ -102,6 +102,8 @@ function NeoQuantLab() {
   const dispersion = dispersionIndex(stats);
 
   const chatContext = useMemo(() => {
+    const sortedByFreq = [...stats].sort((a, b) => b.frequency - a.frequency);
+    const sortedByDelay = [...stats].sort((a, b) => b.delay - a.delay);
     const top = sortedByFreq.slice(0, 5).map((s) => `G${s.group}=${s.frequency}`).join(", ");
     const delayed = sortedByDelay.slice(0, 5).map((s) => `G${s.group}(${s.delay})`).join(", ");
     return [
@@ -114,7 +116,7 @@ function NeoQuantLab() {
       `Chi-square=${audit.chi.value.toFixed(2)} (df=24), Entropia=${audit.entropy.toFixed(3)}/${audit.maxEntropy.toFixed(3)} bits, Runs Z=${audit.runs.z.toFixed(2)}`,
       `Índice de dispersão: ${dispersion.toFixed(3)}`,
     ].join("\n");
-  }, [draws, stats, audit, lottery, state, period, extraction, dispersion, last, sortedByFreq, sortedByDelay]);
+  }, [draws.length, stats, audit, lottery, state, period, extraction, dispersion, last?.group]);
 
   const selectedStat = selected ? stats.find((s) => s.group === selected) : null;
 
