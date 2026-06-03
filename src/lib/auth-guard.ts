@@ -14,6 +14,11 @@ import { redirect } from "@tanstack/react-router";
  * If not, redirects to /auth preserving the intended destination.
  */
 export async function requireAuth({ location }: { location: { href: string } }) {
+  // SSR fallback
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return;
+  }
+
   // We read auth state from localStorage (supabase persists it there)
   const raw = localStorage.getItem("neo_quant_lab_auth");
   if (!raw) {
@@ -50,6 +55,11 @@ export async function requireAuth({ location }: { location: { href: string } }) 
  * If already logged in, redirects to /terminal.
  */
 export async function redirectIfAuthenticated() {
+  // SSR fallback
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return;
+  }
+
   const raw = localStorage.getItem("neo_quant_lab_auth");
   if (!raw) return;
 
