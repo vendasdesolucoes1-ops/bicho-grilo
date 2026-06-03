@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ShieldAlert, Database, Users, Building, MessageSquare, Activity, CheckCircle2, XCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { neoDb as supabase } from "@/integrations/supabase/client";
 import { requireAuth } from "@/lib/auth-guard";
 import { UserMenu } from "@/components/neo/user-menu";
 import { createServerFn } from "@tanstack/react-start";

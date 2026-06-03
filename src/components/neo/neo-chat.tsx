@@ -1,5 +1,6 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, Message } from "ai";
+import { DefaultChatTransport } from "ai";
+import type { UIMessage } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, Brain, Loader2, RotateCcw, ListCollapse } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,7 @@ export function NeoChat({ context }: NeoChatProps) {
   );
 
   // Map db messages to ai-sdk format
-  const initialMessages: Message[] = useMemo(() => {
+  const initialMessages: UIMessage[] = useMemo(() => {
     if (!dbMessages) return [];
     return dbMessages.map(
       (m) =>
@@ -47,20 +48,19 @@ export function NeoChat({ context }: NeoChatProps) {
           role: m.role as "user" | "assistant",
           content: m.content,
           parts: [{ type: "text", text: m.content }],
-        }) as Message,
+        }) as UIMessage,
     );
   }, [dbMessages]);
 
   const { messages, sendMessage, status, setMessages, stop } = useChat({
     transport,
-    initialMessages,
     onFinish: async (msg) => {
       // Quando a IA terminar de responder, persistimos a resposta.
       if (currentConvId) {
         await appendMsg({
-          conversation_id: currentConvId,
+          conversationId: currentConvId,
           role: "assistant",
-          content: msg.content,
+          content: msg.message?.content ?? "",
         });
       }
     },
@@ -94,7 +94,7 @@ export function NeoChat({ context }: NeoChatProps) {
 
     // Save user message to DB
     await appendMsg({
-      conversation_id: convId,
+      conversationId: convId,
       role: "user",
       content: text.trim(),
     });

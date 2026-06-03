@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { neoDb as supabase } from "@/integrations/supabase/client";
 
 export interface DrawRecord {
   id: string;

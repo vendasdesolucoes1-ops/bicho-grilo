@@ -2,7 +2,7 @@
  * useConversations — TanStack Query hooks for IA conversation history
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { neoDb as supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
 
 export interface Conversation {
