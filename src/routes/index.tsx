@@ -19,6 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import { computeGroupStats, generateDraws, randomnessScore } from "@/lib/lottery-data";
 import { GroupHeatmap } from "@/components/neo/group-heatmap";
+import { useAuth } from "@/contexts/auth-context";
+import { UserMenu } from "@/components/neo/user-menu";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -59,6 +61,7 @@ function Landing() {
 
 /* -------------------- NAV -------------------- */
 function Nav() {
+  const { profile } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -99,13 +102,18 @@ function Nav() {
             Edge Score
           </a>
         </nav>
-        <Link
-          to="/terminal"
-          className="group inline-flex items-center gap-1.5 rounded-md border border-border bg-surface/60 px-3.5 py-1.5 text-xs font-medium text-foreground backdrop-blur hover:border-electric hover:text-electric transition-all"
-        >
-          Entrar no Terminal
-          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-        </Link>
+        
+        {profile ? (
+          <UserMenu />
+        ) : (
+          <Link
+            to="/terminal"
+            className="group inline-flex items-center gap-1.5 rounded-md border border-border bg-surface/60 px-3.5 py-1.5 text-xs font-medium text-foreground backdrop-blur hover:border-electric hover:text-electric transition-all"
+          >
+            Entrar no Terminal
+            <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        )}
       </div>
     </header>
   );

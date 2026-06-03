@@ -1,8 +1,10 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, Message } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Brain, Loader2, RotateCcw } from "lucide-react";
+import { ArrowUp, Brain, Loader2, RotateCcw, ListCollapse } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChatHistorySidebar } from "./chat-history-sidebar";
+import { useConversationMessages, useCreateConversation, useAppendMessage } from "@/hooks/use-conversations";
 
 interface NeoChatProps {
   context: string;
@@ -16,9 +18,15 @@ const SUGGESTIONS = [
 ];
 
 export function NeoChat({ context }: NeoChatProps) {
+  const [currentConvId, setCurrentConvId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real messages if we have a conversation selected
+  const { data: dbMessages } = useConversationMessages(currentConvId);
+  const { mutateAsync: createConv } = useCreateConversation();
+  const { mutateAsync: appendMsg } = useAppendMessage();
 
   const transport = useMemo(
     () =>
@@ -29,29 +37,81 @@ export function NeoChat({ context }: NeoChatProps) {
     [context],
   );
 
-  const { messages, sendMessage, status, setMessages, stop } = useChat({ transport });
+  // Map db messages to ai-sdk format
+  const initialMessages: Message[] = useMemo(() => {
+    if (!dbMessages) return [];
+    return dbMessages.map(
+      (m) =>
+        ({
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          parts: [{ type: "text", text: m.content }],
+        }) as Message,
+    );
+  }, [dbMessages]);
+
+  const { messages, sendMessage, status, setMessages, stop } = useChat({
+    transport,
+    initialMessages,
+    onFinish: async (msg) => {
+      // Quando a IA terminar de responder, persistimos a resposta.
+      if (currentConvId) {
+        await appendMsg({
+          conversation_id: currentConvId,
+          role: "assistant",
+          content: msg.content,
+        });
+      }
+    },
+  });
 
   const busy = status === "submitted" || status === "streaming";
 
+  // When initial messages change (switched conversation), update the chat UI state
+  useEffect(() => {
+    setMessages(initialMessages);
+  }, [initialMessages, setMessages]);
+
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+  }, [currentConvId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, status]);
 
-  function send(text: string) {
+  async function send(text: string) {
     if (!text.trim() || busy) return;
+    
+    let convId = currentConvId;
+    if (!convId) {
+      // Create a new conversation if it's the first message
+      const newConv = await createConv({ title: text.slice(0, 30) + "..." });
+      setCurrentConvId(newConv.id);
+      convId = newConv.id;
+    }
+
+    // Save user message to DB
+    await appendMsg({
+      conversation_id: convId,
+      role: "user",
+      content: text.trim(),
+    });
+
     void sendMessage({ text: text.trim() });
     setInput("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col relative">
+      {/* Sidebar de Histórico de Conversas fica injetada aqui e abre por cima do chat (no mobile) ou ao lado. */}
+      <ChatHistorySidebar currentId={currentConvId} onSelect={setCurrentConvId} />
+
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-2">
+          {/* Button to toggle history if needed. For now the ChatHistorySidebar has its own trigger button for mobile. */}
           <div className="relative">
             <div className="h-2 w-2 rounded-full bg-neon" />
             <div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-neon/60" />
@@ -61,13 +121,15 @@ export function NeoChat({ context }: NeoChatProps) {
           </span>
           <span className="ticker text-[10px] text-muted-foreground">v1.0 · stat-audit</span>
         </div>
-        <button
-          onClick={() => setMessages([])}
-          className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Limpar conversa"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCurrentConvId(null)}
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-electric/20 hover:text-electric"
+            title="Nova conversa"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">

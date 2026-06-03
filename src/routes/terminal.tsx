@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   Activity,
@@ -6,6 +6,8 @@ import {
   Database,
   FlaskConical,
   LineChart as LineChartIcon,
+  LogOut,
+  Save,
   Sparkles,
   TerminalSquare,
   Wifi,
@@ -26,8 +28,15 @@ import { MonteCarloModule } from "@/components/neo/montecarlo-module";
 import { AuditModule } from "@/components/neo/audit-module";
 import { ExplorerModule } from "@/components/neo/explorer-module";
 import { InsightsModule } from "@/components/neo/insights-module";
+import { requireAuth } from "@/lib/auth-guard";
+import { useAuth } from "@/contexts/auth-context";
+import { useSaveAnalysis } from "@/hooks/use-analyses";
+import { PLAN_COLORS, PLAN_LABELS } from "@/types/database";
+import { UserMenu } from "@/components/neo/user-menu";
+import { SavedAnalysesSidebar } from "@/components/neo/saved-analyses-sidebar";
 
 export const Route = createFileRoute("/terminal")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "NEO Quant Lab — Terminal de Análise Estatística" },
@@ -103,7 +112,7 @@ function NeoQuantLab() {
       {/* Header */}
       <header className="z-10 flex items-center justify-between border-b border-border bg-surface/80 px-4 py-2.5 backdrop-blur">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2.5">
             <div className="relative flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-electric to-neon">
               <span className="ticker text-xs font-bold text-background">N</span>
             </div>
@@ -116,7 +125,7 @@ function NeoQuantLab() {
                 Statistical Audit Terminal
               </div>
             </div>
-          </div>
+          </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
             {TABS.map((t) => {
@@ -141,24 +150,42 @@ function NeoQuantLab() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] ticker text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Wifi className="h-3 w-3 text-neon" />
-            <span className="text-neon">LIVE</span>
-          </span>
-          <span className="hidden sm:inline">SCORE</span>
-          <span
-            className={cn(
-              "ticker rounded px-2 py-0.5 font-semibold",
-              audit.classification === "Normal" && "bg-neon/15 text-neon",
-              audit.classification === "Atenção" && "bg-warning/15 text-warning",
-              audit.classification === "Anômalo" && "bg-danger/15 text-danger",
-            )}
-          >
-            {audit.score}
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Audit score badge */}
+          <div className="flex items-center gap-3 text-[11px] ticker text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Wifi className="h-3 w-3 text-neon" />
+              <span className="text-neon">LIVE</span>
+            </span>
+            <span className="hidden sm:inline">SCORE</span>
+            <span
+              className={cn(
+                "ticker rounded px-2 py-0.5 font-semibold",
+                audit.classification === "Normal" && "bg-neon/15 text-neon",
+                audit.classification === "Atenção" && "bg-warning/15 text-warning",
+                audit.classification === "Anômalo" && "bg-danger/15 text-danger",
+              )}
+            >
+              {audit.score}
+            </span>
+          </div>
+
+          {/* Save analysis button (visible on terminal tab) */}
+          {tab === "terminal" && (
+            <SaveAnalysisButton
+              draws={draws}
+              audit={audit}
+              filters={{ lottery, state, period, extraction }}
+            />
+          )}
+
+          {/* User menu */}
+          <UserMenu />
         </div>
       </header>
+
+      {/* Saved Analyses Sidebar */}
+      <SavedAnalysesSidebar />
 
       {/* Mobile tab bar */}
       <nav className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface/60 px-2 py-1.5 md:hidden">
@@ -418,3 +445,63 @@ function Legend() {
     </div>
   );
 }
+
+// ─── Save Analysis Button ───────────────────────────────────────────────────
+
+function SaveAnalysisButton({
+  draws,
+  audit,
+  filters,
+}: {
+  draws: ReturnType<typeof generateDraws>;
+  audit: ReturnType<typeof randomnessScore>;
+  filters: { lottery: string; state: string; period: string; extraction: string };
+}) {
+  const { mutateAsync: save, isPending } = useSaveAnalysis();
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    try {
+      await save({
+        title: `${filters.lottery} · ${filters.state} · ${filters.period}`,
+        filters,
+        results: {
+          draws_count: draws.length,
+          audit_score: audit.score,
+          classification: audit.classification,
+          chi: audit.chi,
+          entropy: audit.entropy,
+          max_entropy: audit.maxEntropy,
+          runs: audit.runs,
+          dispersion: 0,
+          top_groups: [],
+        },
+        draws_count: draws.length,
+        audit_score: audit.score,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      console.error("Save error:", e);
+    }
+  };
+
+  return (
+    <button
+      id="btn-save-analysis"
+      onClick={handleSave}
+      disabled={isPending || saved}
+      title="Salvar análise atual"
+      className={cn(
+        "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-all",
+        saved
+          ? "border-neon/40 bg-neon/10 text-neon"
+          : "border-border bg-surface/60 text-muted-foreground hover:border-electric/40 hover:text-electric",
+      )}
+    >
+      <Save className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">{saved ? "Salvo!" : "Salvar"}</span>
+    </button>
+  );
+}
+
