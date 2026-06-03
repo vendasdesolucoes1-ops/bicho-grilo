@@ -18,6 +18,7 @@ import {
   computeGroupStats,
   dispersionIndex,
   randomnessScore,
+  type Draw,
 } from "@/lib/lottery-data";
 import { useDraws } from "@/hooks/use-draws";
 import { GroupHeatmap } from "@/components/neo/group-heatmap";
@@ -463,7 +464,7 @@ function SaveAnalysisButton({
   audit,
   filters,
 }: {
-  draws: ReturnType<typeof generateDraws>;
+  draws: Draw[];
   audit: ReturnType<typeof randomnessScore>;
   filters: { lottery: string; state: string; period: string; extraction: string };
 }) {
