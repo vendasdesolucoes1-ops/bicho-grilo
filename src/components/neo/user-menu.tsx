@@ -16,9 +16,7 @@ export function UserMenu() {
   const plan = profile?.plan ?? "free";
   const planLabel = PLAN_LABELS[plan];
   const planColor = PLAN_COLORS[plan];
-  const displayName =
-    profile?.display_name ?? profile?.tenant_name ?? user.email ?? "Usuário";
-
+  const displayName = profile?.display_name ?? profile?.tenant_name ?? user.email ?? "Usuário";
 
   return (
     <div className="relative">
@@ -31,20 +29,13 @@ export function UserMenu() {
         <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-electric/30 to-neon/30 text-[10px] font-bold uppercase text-electric">
           {displayName.charAt(0)}
         </div>
-        <span className="max-w-[120px] truncate text-foreground/90">
-          {displayName}
-        </span>
-        <span className={cn("ticker text-[9px] uppercase font-bold", planColor)}>
-          {planLabel}
-        </span>
+        <span className="max-w-[120px] truncate text-foreground/90">{displayName}</span>
+        <span className={cn("ticker text-[9px] uppercase font-bold", planColor)}>{planLabel}</span>
       </button>
 
       {open && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full z-20 mt-1.5 w-52 rounded-lg border border-border bg-surface/95 shadow-xl backdrop-blur-xl">
             <div className="border-b border-border/60 px-3 py-3">
               <p className="text-xs font-medium">{displayName}</p>
