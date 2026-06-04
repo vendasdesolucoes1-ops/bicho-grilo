@@ -6,15 +6,17 @@ import { useAuth } from "@/contexts/auth-context";
 import { PLAN_COLORS, PLAN_LABELS } from "@/types/database";
 
 export function UserMenu() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
-  if (!profile) return null;
+  if (!user) return null;
 
-  const plan = profile.plan ?? "free";
+  const plan = profile?.plan ?? "free";
   const planLabel = PLAN_LABELS[plan];
   const planColor = PLAN_COLORS[plan];
-  const displayName = profile.display_name ?? profile.tenant_name ?? "Usuário";
+  const displayName =
+    profile?.display_name ?? profile?.tenant_name ?? user.email ?? "Usuário";
+
 
   return (
     <div className="relative">
@@ -44,7 +46,7 @@ export function UserMenu() {
             <div className="border-b border-border/60 px-3 py-3">
               <p className="text-xs font-medium">{displayName}</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                {profile.tenant_name}
+                {profile?.tenant_name ?? user.email}
               </p>
               <span
                 className={cn(

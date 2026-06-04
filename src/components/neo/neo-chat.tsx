@@ -57,13 +57,20 @@ export function NeoChat({ context }: NeoChatProps) {
     onFinish: async (msg) => {
       // Quando a IA terminar de responder, persistimos a resposta.
       if (currentConvId) {
+        const text =
+          (msg.message?.parts as Array<{ type: string; text?: string }> | undefined)
+            ?.filter((p) => p.type === "text")
+            .map((p) => p.text ?? "")
+            .join("") ?? "";
+
         await appendMsg({
           conversationId: currentConvId,
           role: "assistant",
-          content: msg.message?.content ?? "",
+          content: text,
         });
       }
     },
+
   });
 
   const busy = status === "submitted" || status === "streaming";

@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (data) {
-        const tenant = data.neo_tenants as { name: string; slug: string; plan: string } | null;
+        const tenant = data.neo_tenants as unknown as { name: string; slug: string; plan: string } | null;
         setProfile({
           id: data.id,
           tenant_id: data.tenant_id,
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (retry) {
-          const tenant = retry.neo_tenants as { name: string; slug: string; plan: string } | null;
+          const tenant = retry.neo_tenants as unknown as { name: string; slug: string; plan: string } | null;
           setProfile({
             id: retry.id,
             tenant_id: retry.tenant_id,
