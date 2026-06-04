@@ -58,10 +58,11 @@ export function NeoChat({ context }: NeoChatProps) {
       // Quando a IA terminar de responder, persistimos a resposta.
       if (currentConvId) {
         const text =
-          msg.message?.parts
-            ?.filter((p: { type: string }) => p.type === "text")
-            .map((p: { text?: string }) => p.text ?? "")
+          (msg.message?.parts as Array<{ type: string; text?: string }> | undefined)
+            ?.filter((p) => p.type === "text")
+            .map((p) => p.text ?? "")
             .join("") ?? "";
+
         await appendMsg({
           conversationId: currentConvId,
           role: "assistant",
