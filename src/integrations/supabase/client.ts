@@ -3,7 +3,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-type UntypedSupabaseClient = ReturnType<typeof createClient<Record<string, never>>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type UntypedSupabaseClient = ReturnType<typeof createClient<any>>;
 
 const SUPABASE_URL = "https://qfzgjgkdbblysdslensu.supabase.co";
 const SUPABASE_ANON_KEY =
