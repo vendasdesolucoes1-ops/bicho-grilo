@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase, neoDb } from "@/integrations/supabase/client";
 
@@ -56,7 +49,10 @@ async function ensureNeoProfile(userId: string, displayName?: string | null) {
     if (!existing) {
       const email = (await supabase.auth.getUser()).data.user?.email ?? "user";
       const slug =
-        email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "-") +
+        email
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "-") +
         "-" +
         userId.slice(0, 6);
 
@@ -99,7 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (data) {
-        const tenant = data.neo_tenants as unknown as { name: string; slug: string; plan: string } | null;
+        const tenant = data.neo_tenants as unknown as {
+          name: string;
+          slug: string;
+          plan: string;
+        } | null;
         setProfile({
           id: data.id,
           tenant_id: data.tenant_id,
@@ -125,7 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (retry) {
-          const tenant = retry.neo_tenants as unknown as { name: string; slug: string; plan: string } | null;
+          const tenant = retry.neo_tenants as unknown as {
+            name: string;
+            slug: string;
+            plan: string;
+          } | null;
           setProfile({
             id: retry.id,
             tenant_id: retry.tenant_id,
@@ -224,9 +228,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
+    setIsLoading(true);
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } finally {
+      localStorage.removeItem("neo_quant_lab_auth");
+      setUser(null);
+      setProfile(null);
+      setIsLoading(false);
+      setIsReady(true);
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
