@@ -29,6 +29,7 @@ const CLIENT_OPTIONS = {
 // Typed client for existing CRM tables
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, CLIENT_OPTIONS);
 
-// Untyped client for neo_* tables (types not yet in generated schema)
+// Untyped alias for neo_* tables (types not yet in generated schema).
+// Keep a single GoTrue client instance so auth/session events remain consistent.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const neoDb = createClient<any>(SUPABASE_URL, SUPABASE_ANON_KEY, CLIENT_OPTIONS);
+export const neoDb = supabase as unknown as ReturnType<typeof createClient<any>>;
