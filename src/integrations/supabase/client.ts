@@ -32,4 +32,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, 
 // Untyped alias for neo_* tables (types not yet in generated schema).
 // Keep a single GoTrue client instance so auth/session events remain consistent.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const neoDb = supabase as unknown as ReturnType<typeof createClient<any>>;
+export const neoDb = supabase as unknown as ReturnType<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  typeof createClient<any>
+>;
