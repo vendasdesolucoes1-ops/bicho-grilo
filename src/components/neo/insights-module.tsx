@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, Play } from "lucide-react";
 
 interface InsightsProps {
   context: string;
@@ -24,17 +24,13 @@ export function InsightsModule({ context }: InsightsProps) {
     });
   }
 
-  useEffect(() => {
-    generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const text = messages
     .filter((m) => m.role === "assistant")
     .map((m) => m.parts.map((p) => (p.type === "text" ? p.text : "")).join(""))
     .join("\n\n");
 
   const busy = status === "submitted" || status === "streaming";
+  const hasMessages = messages.length > 0;
 
   return (
     <div className="space-y-4 p-4">
@@ -53,20 +49,36 @@ export function InsightsModule({ context }: InsightsProps) {
           disabled={busy}
           className="inline-flex items-center gap-2 rounded bg-electric px-3 py-1.5 text-xs font-semibold text-electric-foreground hover:brightness-110 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-          Regenerar
+          {busy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : hasMessages ? (
+            <RefreshCw className="h-3 w-3" />
+          ) : (
+            <Play className="h-3 w-3" />
+          )}
+          {hasMessages ? "Regenerar" : "Gerar Insights"}
         </button>
       </header>
 
-      <div className="rounded-md border border-border bg-surface p-5">
+      <div className="rounded-md border border-border bg-surface p-5 min-h-[150px]">
         {busy && !text && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> NEO Analyst auditando os dados…
           </div>
         )}
-        <div className="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">
-          {text}
-        </div>
+        
+        {!busy && !text && (
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground py-8">
+            <Sparkles className="h-8 w-8 opacity-20" />
+            <p className="text-sm">Clique em "Gerar Insights" para iniciar a auditoria com Inteligência Artificial.</p>
+          </div>
+        )}
+
+        {text && (
+          <div className="prose prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap">
+            {text}
+          </div>
+        )}
       </div>
     </div>
   );
