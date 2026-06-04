@@ -46,7 +46,7 @@ export function UserMenu() {
             <div className="border-b border-border/60 px-3 py-3">
               <p className="text-xs font-medium">{displayName}</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                {profile.tenant_name}
+                {profile?.tenant_name ?? user.email}
               </p>
               <span
                 className={cn(
