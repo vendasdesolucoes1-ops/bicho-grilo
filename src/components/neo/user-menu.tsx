@@ -6,15 +6,17 @@ import { useAuth } from "@/contexts/auth-context";
 import { PLAN_COLORS, PLAN_LABELS } from "@/types/database";
 
 export function UserMenu() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
-  if (!profile) return null;
+  if (!user) return null;
 
-  const plan = profile.plan ?? "free";
+  const plan = profile?.plan ?? "free";
   const planLabel = PLAN_LABELS[plan];
   const planColor = PLAN_COLORS[plan];
-  const displayName = profile.display_name ?? profile.tenant_name ?? "Usuário";
+  const displayName =
+    profile?.display_name ?? profile?.tenant_name ?? user.email ?? "Usuário";
+
 
   return (
     <div className="relative">
