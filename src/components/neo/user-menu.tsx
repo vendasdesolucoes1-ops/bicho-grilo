@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, User, CreditCard, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
@@ -7,7 +7,9 @@ import { PLAN_COLORS, PLAN_LABELS } from "@/types/database";
 
 export function UserMenu() {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   if (!user) return null;
 
@@ -21,14 +23,15 @@ export function UserMenu() {
   return (
     <div className="relative">
       <button
+        type="button"
         id="btn-user-menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-md border border-border bg-surface/60 px-2.5 py-1.5 text-xs transition-all hover:border-electric/40"
+        className="flex items-center gap-2 rounded-md border border-electric/40 bg-electric/10 px-2.5 py-1.5 text-xs transition-all hover:border-electric/70 hover:bg-electric/15"
       >
         <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-electric/30 to-neon/30 text-[10px] font-bold uppercase text-electric">
           {displayName.charAt(0)}
         </div>
-        <span className="hidden sm:inline max-w-[100px] truncate text-foreground/80">
+        <span className="max-w-[120px] truncate text-foreground/90">
           {displayName}
         </span>
         <span className={cn("ticker text-[9px] uppercase font-bold", planColor)}>
@@ -86,15 +89,21 @@ export function UserMenu() {
                 Assinatura
               </Link>
               <button
+                type="button"
                 id="btn-logout"
                 onClick={async () => {
+                  if (isSigningOut) return;
+                  setIsSigningOut(true);
                   setOpen(false);
                   await signOut();
+                  await navigate({ to: "/auth", replace: true, search: { redirect: "/terminal" } });
+                  window.location.replace("/auth");
                 }}
+                disabled={isSigningOut}
                 className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors mt-1 border-t border-border/50"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                Sair
+                {isSigningOut ? "Saindo..." : "Sair"}
               </button>
             </div>
           </div>

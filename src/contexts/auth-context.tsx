@@ -224,9 +224,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
+    setIsLoading(true);
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } finally {
+      localStorage.removeItem("neo_quant_lab_auth");
+      setUser(null);
+      setProfile(null);
+      setIsLoading(false);
+      setIsReady(true);
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
