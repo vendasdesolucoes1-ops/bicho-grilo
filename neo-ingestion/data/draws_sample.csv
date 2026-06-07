@@ -1,0 +1,11 @@
+state,lottery,date,number,source_url
+SP,milhar,2024-01-02,1234,https://example.com/sp/2024-01-02
+RJ,duque,2024-02-14,5678,https://example.com/rj/2024-02-14
+MG,terno,2024-03-21,0042,https://example.com/mg/2024-03-21
+BA,quadra,2024-04-09,9981,https://example.com/ba/2024-04-09
+RS,milhar,2024-05-17,3305,https://example.com/rs/2024-05-17
+SP,duque,2024-06-25,7720,https://example.com/sp/2024-06-25
+RJ,terno,2024-08-03,0456,https://example.com/rj/2024-08-03
+MG,quadra,2024-10-11,8899,https://example.com/mg/2024-10-11
+BA,milhar,2024-12-19,1357,https://example.com/ba/2024-12-19
+RS,duque,2025-02-06,2468,https://example.com/rs/2025-02-06

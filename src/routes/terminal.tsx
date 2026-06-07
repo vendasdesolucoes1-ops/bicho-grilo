@@ -20,7 +20,7 @@ import {
   randomnessScore,
   type Draw,
 } from "@/lib/lottery-data";
-import { useDraws } from "@/hooks/use-draws";
+import { useDraws, useDrawsCompleteness } from "@/hooks/use-draws";
 import { GroupHeatmap } from "@/components/neo/group-heatmap";
 import { StatCard } from "@/components/neo/stat-card";
 import { NeoChat } from "@/components/neo/neo-chat";
@@ -79,6 +79,7 @@ function NeoQuantLab() {
   const limit = periodMap[period] ?? 600;
   
   const { data: drawsData, isLoading } = useDraws(limit);
+  const { isTruncated, loaded, total } = useDrawsCompleteness(limit);
   const draws = useMemo(() => {
     if (!drawsData) return [];
     return drawsData.map((d) => ({
@@ -225,6 +226,11 @@ function NeoQuantLab() {
           <div className="grid grid-cols-1 gap-px bg-border lg:grid-cols-[280px_1fr_360px]">
             {/* LEFT — Filters + Stats */}
             <aside className="space-y-4 bg-background p-4">
+              {isTruncated && (
+                <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                  Analisando {loaded} de {total} draws totais — os dados estão truncados pelo limite de carregamento. As análises estatísticas refletem apenas esta amostra.
+                </div>
+              )}
               <section>
                 <SectionLabel>Filtros</SectionLabel>
                 <div className="space-y-2">

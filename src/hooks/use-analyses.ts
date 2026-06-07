@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { neoDb as supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
+import { PLAN_LIMITS } from "@/hooks/use-plan-limits";
 
 const QUERY_KEY = "neo-analyses";
 
@@ -55,12 +56,25 @@ interface SaveAnalysisInput {
 }
 
 export function useSaveAnalysis() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: SaveAnalysisInput) => {
       if (!user) throw new Error("Usuário não autenticado");
+
+      // N-02: enforce max_analyses before INSERT — frontend-only checks can be bypassed.
+      const limits = PLAN_LIMITS[(profile?.plan ?? "free") as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.free;
+      if (limits.max_analyses >= 0) {
+        const { count } = await supabase
+          .from("neo_analyses")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if ((count ?? 0) >= limits.max_analyses) {
+          throw new Error(`Limite de ${limits.max_analyses} análises do plano ${profile?.plan ?? "free"} atingido. Faça upgrade para salvar mais.`);
+        }
+      }
 
       const { data, error } = await supabase
         .from("neo_analyses")
