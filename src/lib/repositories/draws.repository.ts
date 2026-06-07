@@ -42,18 +42,36 @@ export class DrawsRepository {
   }
 
   /**
-   * Bulk insert for draw records.
+   * Bulk insert for draw records, chunked to avoid request size/timeout limits.
    */
   static async bulkInsertDraws(draws: Omit<DrawRecord, "id" | "created_at">[]): Promise<boolean> {
-    const { error } = await supabase
-      .from("neo_draws")
-      .insert(draws);
+    const CHUNK_SIZE = 500;
+    for (let i = 0; i < draws.length; i += CHUNK_SIZE) {
+      const chunk = draws.slice(i, i + CHUNK_SIZE);
+      const { error } = await supabase.from("neo_draws").insert(chunk);
 
-    if (error) {
-      console.error("Bulk insert draws error:", error);
-      return false;
+      if (error) {
+        console.error(`Bulk insert chunk ${i / CHUNK_SIZE + 1} error:`, error);
+        return false;
+      }
+      console.log(`[bulkInsertDraws] chunk ${i / CHUNK_SIZE + 1} inserted (${chunk.length} records)`);
     }
     return true;
+  }
+
+  /**
+   * Total count of draws in the table, for "X of Y" transparency in the UI.
+   */
+  static async getDrawsCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from("neo_draws")
+      .select("*", { count: "exact", head: true });
+
+    if (error) {
+      console.error("Failed to count draws:", error);
+      return 0;
+    }
+    return count ?? 0;
   }
 
   /**

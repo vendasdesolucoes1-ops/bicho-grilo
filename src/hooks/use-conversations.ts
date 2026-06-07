@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { neoDb as supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
+import { PLAN_LIMITS } from "@/hooks/use-plan-limits";
 
 export interface Conversation {
   id: string;
@@ -72,12 +73,26 @@ export function useConversationMessages(conversationId: string | null) {
 // ─── Create conversation ───────────────────────────────────────────────────
 
 export function useCreateConversation() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: { title?: string; context?: string }) => {
       if (!user) throw new Error("Not authenticated");
+
+      // N-02: enforce max_conversations before INSERT — frontend-only checks can be bypassed.
+      const limits = PLAN_LIMITS[(profile?.plan ?? "free") as keyof typeof PLAN_LIMITS] ?? PLAN_LIMITS.free;
+      if (limits.max_conversations >= 0) {
+        const { count } = await supabase
+          .from("neo_conversations")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if ((count ?? 0) >= limits.max_conversations) {
+          throw new Error(`Limite de ${limits.max_conversations} conversas do plano ${profile?.plan ?? "free"} atingido. Faça upgrade para criar mais.`);
+        }
+      }
+
       const { data, error } = await supabase
         .from("neo_conversations")
         .insert({

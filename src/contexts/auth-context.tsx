@@ -56,19 +56,29 @@ async function ensureNeoProfile(userId: string, displayName?: string | null) {
         "-" +
         userId.slice(0, 6);
 
-      const { data: tenant } = await neoDb
+      const { data: tenant, error: tenantError } = await neoDb
         .from("neo_tenants")
         .insert({ slug, name: displayName ?? email, plan: "free" })
         .select("id")
         .single();
 
+      // 23505 = unique_violation: another concurrent request already created the tenant/profile.
+      if (tenantError) {
+        if ((tenantError as { code?: string }).code === "23505") return;
+        throw tenantError;
+      }
+
       if (tenant) {
-        await neoDb.from("neo_profiles").insert({
+        const { error: profileError } = await neoDb.from("neo_profiles").insert({
           id: userId,
           tenant_id: tenant.id,
           role: "owner",
           display_name: displayName ?? null,
         });
+
+        if (profileError && (profileError as { code?: string }).code !== "23505") {
+          throw profileError;
+        }
       }
     }
   } catch (e) {
