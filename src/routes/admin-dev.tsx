@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ShieldAlert, Database, Users, Building, MessageSquare, Activity, CheckCircle2, XCircle } from "lucide-react";
 import { neoDb as supabase } from "@/integrations/supabase/client";
 import { requireAuth } from "@/lib/auth-guard";
+import { redirect } from "@tanstack/react-router";
 import { UserMenu } from "@/components/neo/user-menu";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -19,7 +20,18 @@ const getDiagnostics = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/admin-dev")({
-  beforeLoad: requireAuth,
+  beforeLoad: async (ctx) => {
+    await requireAuth(ctx);
+    const { data: userData } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from("neo_profiles")
+      .select("role")
+      .eq("id", userData.user?.id ?? "")
+      .maybeSingle();
+    if (!profile || (profile.role !== "owner" && profile.role !== "admin")) {
+      throw redirect({ to: "/terminal" });
+    }
+  },
   head: () => ({
     meta: [{ title: "Admin Dev — NEO Quant Lab" }],
   }),

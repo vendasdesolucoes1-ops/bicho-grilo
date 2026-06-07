@@ -1,16 +1,52 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 import { DrawsRepository, type DrawRecord } from "@/lib/repositories/draws.repository";
-import { requireAuth } from "@/lib/auth-guard";
+import type { Database } from "@/integrations/supabase/types";
+
+function unauthorized(message: string, status = 401) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
 export const Route = createFileRoute("/api/import-draws")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         try {
-          // Em um sistema real, exigimos autenticação antes do processamento.
-          // Como estamos no Server, podemos injetar as validações na request.
-          // await requireAuth(); 
-          
+          const authHeader = request.headers.get("authorization");
+          if (!authHeader?.startsWith("Bearer ")) {
+            return unauthorized("Unauthorized: Bearer token required");
+          }
+          const token = authHeader.slice("Bearer ".length);
+
+          const SUPABASE_URL = process.env.SUPABASE_URL;
+          const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+          if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+            return unauthorized("Server misconfigured: missing Supabase environment variables", 500);
+          }
+
+          const authedClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+            global: { headers: { Authorization: `Bearer ${token}` } },
+            auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+          });
+
+          const { data: claims, error: claimsError } = await authedClient.auth.getClaims(token);
+          if (claimsError || !claims?.claims?.sub) {
+            return unauthorized("Unauthorized: Invalid token");
+          }
+
+          const { data: profile } = await authedClient
+            .from("neo_profiles")
+            .select("role")
+            .eq("id", claims.claims.sub)
+            .maybeSingle();
+
+          if (!profile || (profile.role !== "owner" && profile.role !== "admin")) {
+            return unauthorized("Forbidden: requires owner or admin role", 403);
+          }
+
           const body = await request.json();
           if (!body || !Array.isArray(body.draws)) {
             return new Response(JSON.stringify({ error: "Invalid payload. Expected { draws: [] }" }), {

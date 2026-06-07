@@ -8,41 +8,23 @@
  *   });
  */
 import { redirect } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Requires the user to be authenticated.
- * If not, redirects to /auth preserving the intended destination.
+ * Validates the session against Supabase (not just a local token check),
+ * so revoked/expired sessions are rejected immediately.
+ * If not authenticated, redirects to /auth preserving the intended destination.
  */
 export async function requireAuth({ location }: { location: { href: string } }) {
   // SSR fallback
-  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+  if (typeof window === "undefined") {
     return;
   }
 
-  // We read auth state from localStorage (supabase persists it there)
-  const raw = localStorage.getItem("neo_quant_lab_auth");
-  if (!raw) {
-    throw redirect({
-      to: "/auth",
-      search: { redirect: location.href },
-    });
-  }
+  const { data: { session } } = await supabase.auth.getSession();
 
-  try {
-    const parsed = JSON.parse(raw);
-    const hasSession =
-      parsed?.access_token &&
-      parsed?.expires_at &&
-      Date.now() / 1000 < parsed.expires_at;
-
-    if (!hasSession) {
-      throw redirect({
-        to: "/auth",
-        search: { redirect: location.href },
-      });
-    }
-  } catch {
-    // If parsing fails, redirect to login
+  if (!session) {
     throw redirect({
       to: "/auth",
       search: { redirect: location.href },

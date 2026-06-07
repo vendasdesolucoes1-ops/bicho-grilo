@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables (contains secrets - never commit)
+.env
+.env.local
